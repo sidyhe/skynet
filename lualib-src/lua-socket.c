@@ -445,8 +445,11 @@ static int
 lconnect(lua_State *L) {
 	size_t sz = 0;
 	const char * addr = luaL_checklstring(L,1,&sz);
-	char tmp[sz];
+	char tmp[256];
 	int port = 0;
+	if (sz >= _countof(tmp) - 1) {
+		return luaL_error(L, "[Win32] str too large");
+	}
 	const char * host = address_port(L, tmp, addr, 2, &port);
 	if (port == 0) {
 		return luaL_error(L, "Invalid port");
@@ -605,9 +608,12 @@ ludp(lua_State *L) {
 	struct skynet_context * ctx = lua_touserdata(L, lua_upvalueindex(1));
 	size_t sz = 0;
 	const char * addr = lua_tolstring(L,1,&sz);
-	char tmp[sz];
+	char tmp[256];
 	int port = 0;
 	const char * host = NULL;
+	if (sz >= _countof(tmp) - 1) {
+		return luaL_error(L, "[Win32] str too large");
+	}
 	if (addr) {
 		host = address_port(L, tmp, addr, 2, &port);
 	}
@@ -626,9 +632,12 @@ ludp_connect(lua_State *L) {
 	int id = luaL_checkinteger(L, 1);
 	size_t sz = 0;
 	const char * addr = luaL_checklstring(L,2,&sz);
-	char tmp[sz];
+	char tmp[256];
 	int port = 0;
 	const char * host = NULL;
+	if (sz >= _countof(tmp) - 1) {
+		return luaL_error(L, "[Win32] str too large");
+	}
 	if (addr) {
 		host = address_port(L, tmp, addr, 3, &port);
 	}

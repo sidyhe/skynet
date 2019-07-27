@@ -88,7 +88,11 @@ _forward_agent(struct gate * g, int fd, uint32_t agentaddr, uint32_t clientaddr)
 static void
 _ctrl(struct gate * g, const void * msg, int sz) {
 	struct skynet_context * ctx = g->ctx;
-	char tmp[sz+1];
+	char tmp[1024];
+	if (sz >= _countof(tmp)) {
+		skynet_error(ctx, "[Win32] msg too large");
+		return;
+	}
 	memcpy(tmp, msg, sz);
 	tmp[sz] = '\0';
 	char * command = tmp;
@@ -289,7 +293,7 @@ _cb(struct skynet_context * ctx, void * ud, int type, int session, uint32_t sour
 			break;
 		}
 		// The last 4 bytes in msg are the id of socket, write following bytes to it
-		const uint8_t * idbuf = msg + sz - 4;
+		const uint8_t * idbuf = (const char *)msg + sz - 4;
 		uint32_t uid = idbuf[0] | idbuf[1] << 8 | idbuf[2] << 16 | idbuf[3] << 24;
 		int id = hashid_lookup(&g->hash, uid);
 		if (id>=0) {
@@ -345,10 +349,14 @@ gate_init(struct gate *g , struct skynet_context * ctx, char * parm) {
 		return 1;
 	int max = 0;
 	int sz = strlen(parm)+1;
-	char watchdog[sz];
-	char binding[sz];
+	char watchdog[256];
+	char binding[256];
 	int client_tag = 0;
 	char header;
+	if (sz >= _countof(binding)) {
+		skynet_error(ctx, "[Win32] parm too large");
+		return 1;
+	}
 	int n = sscanf(parm, "%c %s %s %d %d", &header, watchdog, binding, &client_tag, &max);
 	if (n<4) {
 		skynet_error(ctx, "Invalid gate parm %s",parm);

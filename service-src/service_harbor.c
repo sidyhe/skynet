@@ -605,7 +605,11 @@ harbor_command(struct harbor * h, const char * msg, size_t sz, int session, uint
 	}
 	case 'S' :
 	case 'A' : {
-		char buffer[s+1];
+		char buffer[1024];
+		if (s >= _countof(buffer)) {
+			skynet_error(h->ctx, "[Win32] msg too large");
+			return;
+		}
 		memcpy(buffer, name, s);
 		buffer[s] = 0;
 		int fd=0, id=0;

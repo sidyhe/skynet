@@ -11,7 +11,11 @@ skynet_log_open(struct skynet_context * ctx, uint32_t handle) {
 	if (logpath == NULL)
 		return NULL;
 	size_t sz = strlen(logpath);
-	char tmp[sz + 16];
+	char tmp[256];
+	if (sz >= _countof(tmp) - 1) {
+		skynet_error(ctx, "[Win32] path too large");
+		return NULL;
+	}
 	sprintf(tmp, "%s/%08x.log", logpath, handle);
 	FILE *f = fopen(tmp, "ab");
 	if (f) {

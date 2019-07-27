@@ -38,8 +38,13 @@ lconnect(lua_State *L) {
 		return luaL_error(L, "Connect %s %d failed", addr, port);
 	}
 
+#ifdef _WIN32
+	int ul = 1;
+	ioctlsocket(fd, FIONBIO, &ul);
+#else
 	int flag = fcntl(fd, F_GETFL, 0);
 	fcntl(fd, F_SETFL, flag | O_NONBLOCK);
+#endif // _WIN32
 
 	lua_pushinteger(L, fd);
 
@@ -110,6 +115,10 @@ lrecv(lua_State *L) {
 		return 1;
 	}
 	if (r < 0) {
+		errno = EIO;
+		if (GetLastError() == WSAEWOULDBLOCK) {
+			errno = EAGAIN;
+		}
 		if (errno == EAGAIN || errno == EINTR) {
 			return 0;
 		}

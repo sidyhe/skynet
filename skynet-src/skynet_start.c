@@ -181,7 +181,7 @@ thread_worker(void *p) {
 
 static void
 start(int thread) {
-	pthread_t pid[thread+3];
+	pthread_t pid[64];
 
 	struct monitor *m = skynet_malloc(sizeof(*m));
 	memset(m, 0, sizeof(*m));
@@ -211,7 +211,7 @@ start(int thread) {
 		1, 1, 1, 1, 1, 1, 1, 1, 
 		2, 2, 2, 2, 2, 2, 2, 2, 
 		3, 3, 3, 3, 3, 3, 3, 3, };
-	struct worker_parm wp[thread];
+	struct worker_parm wp[64];
 	for (i=0;i<thread;i++) {
 		wp[i].m = m;
 		wp[i].id = i;
@@ -233,8 +233,12 @@ start(int thread) {
 static void
 bootstrap(struct skynet_context * logger, const char * cmdline) {
 	int sz = strlen(cmdline);
-	char name[sz+1];
-	char args[sz+1];
+	char name[512];
+	char args[512];
+	if (sz >= _countof(name)) {
+		skynet_error(NULL, "[Win32] cmd too large");
+		exit(1);
+	}
 	sscanf(cmdline, "%s %s", name, args);
 	struct skynet_context *ctx = skynet_context_new(name, args);
 	if (ctx == NULL) {

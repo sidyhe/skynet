@@ -92,7 +92,7 @@ struct socket {
 	int fd;
 	int id;
 	uint8_t protocol;
-	uint8_t type;
+	uint16_t type;
 	uint16_t udpconnecting;
 	int64_t warn_size;
 	union {
@@ -312,7 +312,7 @@ reserve_id(struct socket_server *ss) {
 		}
 		struct socket *s = &ss->slot[HASH_ID(id)];
 		if (s->type == SOCKET_TYPE_INVALID) {
-			if (ATOM_CAS(&s->type, SOCKET_TYPE_INVALID, SOCKET_TYPE_RESERVE)) {
+			if (ATOM_CAS_16(&s->type, SOCKET_TYPE_INVALID, SOCKET_TYPE_RESERVE)) {
 				s->id = id;
 				s->protocol = PROTOCOL_UNKNOWN;
 				// socket_server_udp_connect may inc s->udpconncting directly (from other thread, before new_fd), 
@@ -377,7 +377,7 @@ socket_server_create(uint64_t time) {
 	ss->event_index = 0;
 	memset(&ss->soi, 0, sizeof(ss->soi));
 	FD_ZERO(&ss->rfds);
-	assert(ss->recvctrl_fd < FD_SETSIZE);
+//	assert(ss->recvctrl_fd < FD_SETSIZE);
 
 	return ss;
 }
@@ -534,6 +534,12 @@ open_socket(struct socket_server *ss, struct request_open * request, struct sock
 		socket_keepalive(sock);
 		sp_nonblocking(sock);
 		status = connect( sock, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
+		if (status != 0) {
+			errno = EIO;
+			if (WSAGetLastError() == WSAEWOULDBLOCK) {
+				errno = EINPROGRESS;
+			}
+		}
 		if ( status != 0 && errno != EINPROGRESS) {
 			close(sock);
 			sock = -1;
@@ -1113,7 +1119,7 @@ inc_sending_ref(struct socket *s, int id) {
 				continue;
 			}
 			// inc sending only matching the same socket id
-			if (ATOM_CAS(&s->sending, sending, sending + 1))
+			if (ATOM_CAS_32(&s->sending, sending, sending + 1))
 				return;
 			// atom inc failed, retry
 		} else {

@@ -31,10 +31,10 @@ _try_open(struct modules *m, const char * name) {
 	int sz = path_size + name_size;
 	//search path
 	void * dl = NULL;
-	char tmp[sz];
+	char tmp[512];
 	do
 	{
-		memset(tmp,0,sz);
+		memset(tmp,0,_countof(tmp));
 		while (*path == ';') path++;
 		if (*path == '\0') break;
 		l = strchr(path, ';');
@@ -77,7 +77,11 @@ static void *
 get_api(struct skynet_module *mod, const char *api_name) {
 	size_t name_size = strlen(mod->name);
 	size_t api_size = strlen(api_name);
-	char tmp[name_size + api_size + 1];
+	char tmp[512];
+	if (name_size + api_size >= _countof(tmp)) {
+		fprintf(stderr, "[Win32] name too large");
+		return NULL;
+	}
 	memcpy(tmp, mod->name, name_size);
 	memcpy(tmp+name_size, api_name, api_size+1);
 	char *ptr = strrchr(tmp, '.');

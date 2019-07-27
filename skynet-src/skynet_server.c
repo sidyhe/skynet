@@ -432,8 +432,12 @@ cmd_query(struct skynet_context * context, const char * param) {
 static const char *
 cmd_name(struct skynet_context * context, const char * param) {
 	int size = strlen(param);
-	char name[size+1];
-	char handle[size+1];
+	char name[256];
+	char handle[256];
+	if (size >= _countof(name)) {
+		skynet_error(context, "[Win32] param too large");
+		return NULL;
+	}
 	sscanf(param,"%s %s",name,handle);
 	if (handle[0] != ':') {
 		return NULL;
@@ -482,7 +486,11 @@ cmd_kill(struct skynet_context * context, const char * param) {
 static const char *
 cmd_launch(struct skynet_context * context, const char * param) {
 	size_t sz = strlen(param);
-	char tmp[sz+1];
+	char tmp[512];
+	if (sz >= _countof(tmp)) {
+		fprintf(stderr, "[Win32] param too large");
+		return NULL;
+	}
 	strcpy(tmp,param);
 	char * args = tmp;
 	char * mod = strsep(&args, " \t\r\n");
@@ -504,8 +512,12 @@ cmd_getenv(struct skynet_context * context, const char * param) {
 static const char *
 cmd_setenv(struct skynet_context * context, const char * param) {
 	size_t sz = strlen(param);
-	char key[sz+1];
+	char key[256];
 	int i;
+	if (sz >= _countof(key)) {
+		skynet_error(context, "[Win32] param too large");
+		return NULL;
+	}
 	for (i=0;param[i] != ' ' && param[i];i++) {
 		key[i] = param[i];
 	}
